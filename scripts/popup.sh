@@ -27,7 +27,7 @@ main() {
     -T " tmux binding help · ?:close " \
     -w "$popup_width" \
     -h 90% \
-    "popup_pane_width=\"\$(tmux display-message -p '#{pane_width}')\"; bash '$CURRENT_DIR/viewer.sh' '$tmpfile' \"\$popup_pane_width\"; rm -f '$tmpfile'"
+    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_width'; rm -f '$tmpfile'"
 }
 
 main
