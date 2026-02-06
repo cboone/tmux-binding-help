@@ -10,10 +10,11 @@ wraps multiple times inside the 78-column popup, creating overlapping jumbled te
 
 ## Changes
 
-### 1. `scripts/popup.sh` - Pass popup width to viewer
+### 1. `scripts/popup.sh` - Pass actual popup width to viewer
 
-- Extract the popup width (`80`) into a variable
-- Pass it as the second argument to `viewer.sh`
+- Extract the configured popup width (`80`) into a variable for `display-popup`
+- Pass the **runtime popup pane width** (not the configured literal) as the second
+  argument to `viewer.sh`, so tmux clamping and future `%` widths still work
 
 ```bash
 local popup_width=80
@@ -22,30 +23,42 @@ tmux display-popup \
     -T " tmux help · ?:close " \
     -w "$popup_width" \
     -h 90% \
-    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_width'; rm -f '$tmpfile'"
+    "popup_pane_width=\"\$(tmux display-message -p '#{pane_width}')\"; bash '$CURRENT_DIR/viewer.sh' '$tmpfile' \"$popup_pane_width\"; rm -f '$tmpfile'"
 ```
 
 ### 2. `scripts/viewer.sh` - Use the passed width
 
 - Accept the popup width as an optional second argument in `main()`
+- Validate that argument is numeric before using it
 - In `get_term_size()`, compute `TERM_COLS` as `popup_width - 2` (subtracting 2 for
-  the left and right border characters) when the parameter is provided, falling back
-  to `tput cols` otherwise
+  the left and right border characters) when the parameter is valid and `> 2`,
+  falling back to `tput cols` otherwise
+- Clamp to a small minimum width to avoid negative or unusable widths in edge cases
 
 ```bash
 # In main():
-POPUP_WIDTH="${2:-}"
+POPUP_WIDTH_RAW="${2:-}"
+POPUP_WIDTH=""
+if [[ "$POPUP_WIDTH_RAW" =~ ^[0-9]+$ ]]; then
+    POPUP_WIDTH="$POPUP_WIDTH_RAW"
+fi
 
 # In get_term_size():
 get_term_size() {
     TERM_ROWS=$(tput lines 2>/dev/null || echo 24)
-    if [[ -n "$POPUP_WIDTH" ]] && (( POPUP_WIDTH > 0 )); then
+    if [[ -n "$POPUP_WIDTH" ]] && (( POPUP_WIDTH > 2 )); then
         TERM_COLS=$(( POPUP_WIDTH - 2 ))
     else
         TERM_COLS=$(tput cols 2>/dev/null || echo 80)
     fi
+    (( TERM_COLS < 20 )) && TERM_COLS=20
 }
 ```
+
+### 3. Optional follow-up - Height parity
+
+- If testing still shows viewport issues in some tmux setups, pass runtime popup
+  height the same way and derive rows from that value instead of `tput lines`
 
 ## Verification
 
