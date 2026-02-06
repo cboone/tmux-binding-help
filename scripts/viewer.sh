@@ -163,7 +163,7 @@ get_term_size() {
 }
 
 ensure_visible() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 3))
   if ((SELECTED < SCROLL_OFFSET)); then
     SCROLL_OFFSET=$SELECTED
   elif ((SELECTED >= SCROLL_OFFSET + vh)); then
@@ -207,16 +207,11 @@ truncate() {
 
 render() {
   get_term_size
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 3))
   ensure_visible
 
   # Reset scroll region and move to top-left
   printf '\033[;r\033[H'
-
-  # ── Header ──
-  printf '\033[K%s tmux binding help%s  %s%d bindings%s\n' \
-    "$COLOR_GROUP" "$COLOR_RESET" \
-    "$COLOR_COUNT" "$TOTAL_BINDINGS" "$COLOR_RESET"
 
   # Search bar or help hint
   if ((SEARCH_MODE)); then
@@ -363,14 +358,14 @@ move_top() {
 move_bottom() { SELECTED=$((${#VISIBLE[@]} - 1)); }
 
 page_up() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 3))
   SELECTED=$((SELECTED - vh))
   ((SELECTED < 0)) && SELECTED=0
   true
 }
 
 page_down() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 3))
   local max=$((${#VISIBLE[@]} - 1))
   SELECTED=$((SELECTED + vh))
   ((SELECTED > max)) && SELECTED=$max
