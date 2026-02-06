@@ -151,7 +151,12 @@ group_has_matches() {
 
 get_term_size() {
     TERM_ROWS=$(tput lines 2>/dev/null || echo 24)
-    TERM_COLS=$(tput cols 2>/dev/null || echo 80)
+    if [[ -n "$POPUP_WIDTH" ]] && (( POPUP_WIDTH > 2 )); then
+        TERM_COLS=$(( POPUP_WIDTH - 2 ))
+    else
+        TERM_COLS=$(tput cols 2>/dev/null || echo 80)
+    fi
+    (( TERM_COLS < 20 )) && TERM_COLS=20
 }
 
 ensure_visible() {
@@ -476,6 +481,11 @@ cleanup() {
 
 main() {
     local input_file="${1:--}"
+    POPUP_WIDTH_RAW="${2:-}"
+    POPUP_WIDTH=""
+    if [[ "$POPUP_WIDTH_RAW" =~ ^[0-9]+$ ]]; then
+        POPUP_WIDTH="$POPUP_WIDTH_RAW"
+    fi
 
     parse_input "$input_file"
 
