@@ -26,29 +26,58 @@ BEGIN {
 }
 
 /^bind-key/ {
-    # Detect repeat flag
     repeat = ""
-    if ($2 == "-r") {
-        repeat = " (repeat)"
-        # Shift: -r is $2, -T is $3, table is $4, key is $5, cmd is $6..NF
-        table = $4
-        key = $5
-        cmd = ""
-        for (i = 6; i <= NF; i++) {
-            cmd = cmd (i > 6 ? " " : "") $i
+    table = ""
+    key = ""
+    cmd = ""
+
+    # Parse options without assuming fixed field positions.
+    i = 2
+    while (i <= NF) {
+        token = $i
+
+        if (token == "-r") {
+            repeat = " (repeat)"
+            i++
+            continue
         }
-    } else {
-        # No -r: -T is $2, table is $3, key is $4, cmd is $5..NF
-        table = $3
-        key = $4
-        cmd = ""
-        for (i = 5; i <= NF; i++) {
-            cmd = cmd (i > 5 ? " " : "") $i
+
+        if (token == "-T") {
+            if (i + 1 <= NF) {
+                table = $(i + 1)
+                i += 2
+                continue
+            }
+            break
         }
+
+        # list-keys can include options such as -N/-F before the key.
+        # Their argument may be quoted and contain spaces.
+        if (token == "-N" || token == "-F") {
+            i = consume_option_arg(i + 1)
+            continue
+        }
+
+        if (token == "--") {
+            i++
+            break
+        }
+
+        if (token ~ /^-/) {
+            i++
+            continue
+        }
+
+        key = token
+        i++
+        break
     }
 
-    # Validate we got a table from -T flag
-    if ($2 != "-T" && $3 != "-T") next
+    if (table == "" || key == "") next
+
+    for (; i <= NF; i++) {
+        cmd = cmd (cmd == "" ? "" : " ") $i
+    }
 
     # Register new tables we haven't seen
     if (!(table in table_seen)) {
@@ -60,13 +89,45 @@ BEGIN {
         }
     }
 
-    # Unescape tmux key escaping (e.g., \# -> #, \; -> ;)
-    gsub(/\\/, "", key)
+    # Light unescape of common tmux-escaped key literals.
+    key = unescape_key(key)
 
     count[table]++
     idx = count[table]
     keys[table, idx] = key repeat
     cmds[table, idx] = cmd
+}
+
+function consume_option_arg(i,    tok, quote_char) {
+    if (i > NF) return i
+
+    tok = $i
+    quote_char = substr(tok, 1, 1)
+
+    if ((quote_char == "\"" || quote_char == "'") && length(tok) == 1) {
+        while (i < NF) {
+            i++
+            if (substr($i, length($i), 1) == quote_char) break
+        }
+        return i + 1
+    }
+
+    if ((quote_char == "\"" || quote_char == "'") && substr(tok, length(tok), 1) != quote_char) {
+        while (i < NF) {
+            i++
+            if (substr($i, length($i), 1) == quote_char) break
+        }
+    }
+
+    return i + 1
+}
+
+function unescape_key(raw,    out) {
+    out = raw
+    gsub(/\\\\/, "\\", out)
+    gsub(/\\#/, "#", out)
+    gsub(/\\;/, ";", out)
+    return out
 }
 
 END {
