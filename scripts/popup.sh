@@ -21,7 +21,7 @@ main() {
   echo "$data" >"$tmpfile"
 
   # Launch the popup with the viewer
-  local popup_width=80
+  local popup_width="66%"
   tmux display-popup \
     -E \
     -T " tmux binding help · ?:close " \

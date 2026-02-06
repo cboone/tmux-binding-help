@@ -271,7 +271,7 @@ render() {
       fi
 
       if ((is_selected)); then
-        printf '%s %s %s %s%s' "$COLOR_SELECTED" "$COLOR_ARROW$arrow" "$COLOR_RESET$COLOR_SELECTED" "$color$key" "$COLOR_RESET$COLOR_SELECTED"
+        printf '%s\033[1m %s %s%s' "$COLOR_SELECTED" "$arrow" "$key" "$COLOR_RESET$COLOR_SELECTED"
         local label_len=$((${#key} + 5))
         local pad=$((TERM_COLS - label_len))
         ((pad > 0)) && printf '%*s' "$pad" ""
@@ -322,7 +322,7 @@ render() {
   done
 
   # ── Footer ──
-  printf '\033[K %s%d/%d%s\n' "$COLOR_HELP" "$((SELECTED + 1))" "$visible_count" "$COLOR_RESET"
+  printf '\033[K %s%d/%d%s' "$COLOR_HELP" "$((SELECTED + 1))" "$visible_count" "$COLOR_RESET"
 }
 
 # ── Navigation ─────────────────────────────────────────────────────────────────
@@ -521,6 +521,7 @@ main() {
   trap cleanup EXIT
   stty raw -echo opost 2>/dev/null
   tput smcup 2>/dev/null # Alternate screen
+  printf '\033[2J'       # Clear alternate screen
   tput civis 2>/dev/null # Hide cursor
   printf '\033[?25l'
 
