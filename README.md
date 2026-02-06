@@ -1,4 +1,4 @@
-# tmux-help
+# tmux-binding-help
 
 Interactive popup showing all tmux key bindings, organized by table.
 
@@ -15,7 +15,7 @@ Requires **tmux 3.2+** (for `display-popup`). No external dependencies.
 Add to `~/.tmux.conf`:
 
 ```tmux
-set -g @plugin 'cboone/tmux-help'
+set -g @plugin 'cboone/tmux-binding-help'
 ```
 
 Then press `prefix + I` to install.
@@ -25,7 +25,7 @@ Then press `prefix + I` to install.
 Clone the repo and source it:
 
 ```tmux
-run-shell /path/to/tmux-help/tmux-help.tmux
+run-shell /path/to/tmux-binding-help/tmux-binding-help.tmux
 ```
 
 ## Usage
@@ -53,7 +53,7 @@ Press **`prefix + ?`** to open the help popup.
 
 ```tmux
 # Change the key that opens the help popup (default: ?)
-set -g @tmux-help-key '?'
+set -g @tmux-binding-help-key '?'
 ```
 
 ## Testing
