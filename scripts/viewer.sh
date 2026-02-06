@@ -87,19 +87,17 @@ parse_input() {
 
 rebuild_visible() {
   VISIBLE=()
-  local i type gidx key cmd search_lower=""
+  local i type gidx
 
-  if [[ -n "$SEARCH_TERM" ]]; then
-    search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
-  fi
+  [[ -n "$SEARCH_TERM" ]] && shopt -s nocasematch
 
   for ((i = 0; i < ${#ITEM_TYPE[@]}; i++)); do
     type="${ITEM_TYPE[$i]}"
     gidx="${ITEM_GROUP[$i]}"
 
     if [[ "$type" == "group" ]]; then
-      if [[ -n "$search_lower" ]]; then
-        if group_has_matches "$gidx" "$search_lower"; then
+      if [[ -n "$SEARCH_TERM" ]]; then
+        if group_has_matches "$gidx"; then
           VISIBLE+=("$i")
         fi
       else
@@ -107,14 +105,12 @@ rebuild_visible() {
       fi
     elif [[ "$type" == "bind" ]]; then
       # Skip if group is collapsed (but not during search)
-      if [[ -z "$search_lower" ]] && ((gidx >= 0 && GROUP_COLLAPSED[gidx] == 1)); then
+      if [[ -z "$SEARCH_TERM" ]] && ((gidx >= 0 && GROUP_COLLAPSED[gidx] == 1)); then
         continue
       fi
 
-      if [[ -n "$search_lower" ]]; then
-        local item_lower
-        item_lower="$(printf '%s %s' "${ITEM_KEY[$i]}" "${ITEM_CMD[$i]}" | tr '[:upper:]' '[:lower:]')"
-        if [[ "$item_lower" != *"$search_lower"* ]]; then
+      if [[ -n "$SEARCH_TERM" ]]; then
+        if [[ "${ITEM_KEY[$i]} ${ITEM_CMD[$i]}" != *"$SEARCH_TERM"* ]]; then
           continue
         fi
       fi
@@ -122,6 +118,8 @@ rebuild_visible() {
       VISIBLE+=("$i")
     fi
   done
+
+  [[ -n "$SEARCH_TERM" ]] && shopt -u nocasematch
 
   # Clamp selection
   local max=$((${#VISIBLE[@]} - 1))
@@ -133,13 +131,11 @@ rebuild_visible() {
 }
 
 group_has_matches() {
-  local gidx="$1" search_lower="$2"
+  local gidx="$1"
   local i
   for ((i = 0; i < ${#ITEM_TYPE[@]}; i++)); do
     if [[ "${ITEM_TYPE[$i]}" == "bind" ]] && ((ITEM_GROUP[i] == gidx)); then
-      local item_lower
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$i]}" "${ITEM_CMD[$i]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$i]} ${ITEM_CMD[$i]}" == *"$SEARCH_TERM"* ]]; then
         return 0
       fi
     fi
@@ -182,24 +178,22 @@ highlight_match() {
     return
   fi
 
-  local lower_text lower_search
-  lower_text="$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]')"
-  lower_search="$(printf '%s' "$search" | tr '[:upper:]' '[:lower:]')"
-
-  local prefix="${lower_text%%"$lower_search"*}"
-  if [[ "$prefix" == "$lower_text" ]]; then
-    printf '%s' "$text"
-    return
-  fi
-
-  local pos=${#prefix}
-  local slen=${#search}
-  printf '%s%s%s%s%s' \
-    "${text:0:pos}" \
-    "$COLOR_MATCH" \
-    "${text:pos:slen}" \
-    "$COLOR_RESET" \
-    "${text:pos+slen}"
+  local tlen=${#text} slen=${#search} pos
+  shopt -s nocasematch
+  for ((pos = 0; pos <= tlen - slen; pos++)); do
+    if [[ "${text:pos:slen}" == "$search" ]]; then
+      shopt -u nocasematch
+      printf '%s%s%s%s%s' \
+        "${text:0:pos}" \
+        "$COLOR_MATCH" \
+        "${text:pos:slen}" \
+        "$COLOR_RESET" \
+        "${text:pos+slen}"
+      return
+    fi
+  done
+  shopt -u nocasematch
+  printf '%s' "$text"
 }
 
 truncate() {
@@ -236,7 +230,7 @@ render() {
     printf '\033[K %ssearch: %s (%d matches)  [n/N next/prev, Esc clear]%s\n' \
       "$COLOR_SEARCH" "$SEARCH_TERM" "$match_count" "$COLOR_RESET"
   else
-    printf '\033[K %sj/k:move  Enter/Tab:toggle  /:search  c/e:collapse/expand  q:quit%s\n' \
+    printf '\033[K %s/:search  c/e:collapse/expand all%s\n' \
       "$COLOR_HELP" "$COLOR_RESET"
   fi
 
@@ -387,21 +381,21 @@ search_next() {
   [[ -z "$SEARCH_TERM" ]] && return 0
   local start=$((SELECTED + 1))
   local count=${#VISIBLE[@]}
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i idx vidx item_lower
+  shopt -s nocasematch
+  local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start + i) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 search_prev() {
@@ -409,40 +403,40 @@ search_prev() {
   local count=${#VISIBLE[@]}
   local start=$((SELECTED - 1))
   ((start < 0)) && start=$((count - 1))
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i idx vidx item_lower
+  shopt -s nocasematch
+  local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start - i + count) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 search_next_from_top() {
   [[ -z "$SEARCH_TERM" ]] && return 0
   local count=${#VISIBLE[@]}
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i vidx item_lower
+  shopt -s nocasematch
+  local i vidx
   for ((i = 0; i < count; i++)); do
     vidx="${VISIBLE[$i]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$i
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 # ── Input reading ──────────────────────────────────────────────────────────────
