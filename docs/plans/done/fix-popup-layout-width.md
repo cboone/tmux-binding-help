@@ -20,7 +20,7 @@ wraps multiple times inside the 78-column popup, creating overlapping jumbled te
 local popup_width=80
 tmux display-popup \
     -E \
-    -T " tmux help · ?:close " \
+    -T " tmux binding help · ?:close " \
     -w "$popup_width" \
     -h 90% \
     "popup_pane_width=\"\$(tmux display-message -p '#{pane_width}')\"; bash '$CURRENT_DIR/viewer.sh' '$tmpfile' \"$popup_pane_width\"; rm -f '$tmpfile'"
