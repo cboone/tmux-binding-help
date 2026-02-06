@@ -216,8 +216,8 @@ render() {
   local vh=$((TERM_ROWS - 4))
   ensure_visible
 
-  # Move to top-left
-  printf '\033[H'
+  # Reset scroll region and move to top-left
+  printf '\033[;r\033[H'
 
   # ── Header ──
   printf '\033[K%s tmux binding help%s  %s%d bindings%s\n' \

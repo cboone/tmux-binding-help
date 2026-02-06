@@ -21,13 +21,17 @@ main() {
   echo "$data" >"$tmpfile"
 
   # Launch the popup with the viewer
-  local popup_width="66%"
+  local popup_pct=66
+  local client_width
+  client_width=$(tmux display-message -p '#{client_width}')
+  local popup_cols=$(( client_width * popup_pct / 100 ))
+
   tmux display-popup \
     -E \
     -T " tmux binding help · ?:close " \
-    -w "$popup_width" \
+    -w "${popup_pct}%" \
     -h 90% \
-    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_width'; rm -f '$tmpfile'"
+    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; rm -f '$tmpfile'"
 }
 
 main
