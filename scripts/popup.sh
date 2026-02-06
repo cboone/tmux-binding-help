@@ -20,12 +20,13 @@ main() {
     echo "$data" > "$tmpfile"
 
     # Launch the popup with the viewer
+    local popup_width=80
     tmux display-popup \
         -E \
         -T " tmux help · ?:close " \
-        -w 80 \
+        -w "$popup_width" \
         -h 90% \
-        "bash '$CURRENT_DIR/viewer.sh' '$tmpfile'; rm -f '$tmpfile'"
+        "popup_pane_width=\"\$(tmux display-message -p '#{pane_width}')\"; bash '$CURRENT_DIR/viewer.sh' '$tmpfile' \"\$popup_pane_width\"; rm -f '$tmpfile'"
 }
 
 main
