@@ -150,9 +150,16 @@ group_has_matches() {
 # ── Rendering ──────────────────────────────────────────────────────────────────
 
 get_term_size() {
-  TERM_ROWS=$(tput lines 2>/dev/null || echo 24)
+  # stty size returns correct dimensions inside tmux popups; tput does not.
+  local size_rows size_cols
+  read -r size_rows size_cols < <(stty size 2>/dev/null) || true
+
+  TERM_ROWS="${size_rows:-24}"
+
   if [[ -n "$POPUP_WIDTH" ]] && ((POPUP_WIDTH > 2)); then
     TERM_COLS=$((POPUP_WIDTH - 2))
+  elif [[ -n "$size_cols" ]] && ((size_cols > 0)); then
+    TERM_COLS="$size_cols"
   else
     TERM_COLS=$(tput cols 2>/dev/null || echo 80)
   fi
@@ -512,7 +519,7 @@ main() {
   # Save terminal state and enter raw mode
   SAVED_TTY="$(stty -g 2>/dev/null)"
   trap cleanup EXIT
-  stty raw -echo 2>/dev/null
+  stty raw -echo opost 2>/dev/null
   tput smcup 2>/dev/null # Alternate screen
   tput civis 2>/dev/null # Hide cursor
   printf '\033[?25l'
