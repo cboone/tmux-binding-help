@@ -56,6 +56,16 @@ Press **`prefix + ?`** to open the help popup.
 set -g @tmux-help-key '?'
 ```
 
+## Testing
+
+Parser behavior is covered with [Scrut](https://github.com/jorisvink/scrut) tests.
+
+Run tests from the repository root:
+
+```bash
+scrut test -w . tests
+```
+
 ## License
 
 [MIT](LICENSE)
