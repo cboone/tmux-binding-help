@@ -236,6 +236,7 @@ render() {
   # ── Body ──
   local visible_count=${#VISIBLE[@]}
   local max_cmd_width=$((TERM_COLS - 5 - KEY_COL_WIDTH - 1)) # indent + key col + 1 space minimum
+  ((max_cmd_width < 1)) && max_cmd_width=1
   local line_num i idx type gidx key cmd is_selected
 
   for ((line_num = 0; line_num < vh; line_num++)); do

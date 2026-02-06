@@ -17,6 +17,7 @@ main() {
   # Write data to a temp file for the viewer
   local tmpfile
   tmpfile="$(mktemp "${TMPDIR:-/tmp}/tmux-binding-help.XXXXXX")"
+  trap 'rm -f "$tmpfile"' EXIT
   echo "$data" >"$tmpfile"
 
   # Launch the popup with the viewer
