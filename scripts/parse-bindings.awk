@@ -122,11 +122,18 @@ function consume_option_arg(i,    tok, quote_char) {
     return i + 1
 }
 
-function unescape_key(raw,    out) {
-    out = raw
-    gsub(/\\\\/, "\\", out)
-    gsub(/\\#/, "#", out)
-    gsub(/\\;/, ";", out)
+function unescape_key(raw,    out, i, c, len) {
+    out = ""
+    len = length(raw)
+    for (i = 1; i <= len; i++) {
+        c = substr(raw, i, 1)
+        if (c == "\\" && i < len) {
+            i++
+            out = out substr(raw, i, 1)
+        } else {
+            out = out c
+        }
+    }
     return out
 }
 

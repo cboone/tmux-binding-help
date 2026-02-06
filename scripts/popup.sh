@@ -21,13 +21,20 @@ main() {
   echo "$data" >"$tmpfile"
 
   # Launch the popup with the viewer
-  local popup_width=80
+  local popup_pct=66
+  local client_width
+  client_width=$(tmux display-message -p '#{client_width}')
+  local popup_cols=$(( client_width * popup_pct / 100 ))
+
+  local bind_count
+  bind_count=$(grep -c '^BIND' "$tmpfile")
+
   tmux display-popup \
     -E \
-    -T " tmux binding help · ?:close " \
-    -w "$popup_width" \
+    -T " binding help - $bind_count bindings " \
+    -w "${popup_pct}%" \
     -h 90% \
-    "popup_pane_width=\"\$(tmux display-message -p '#{pane_width}')\"; bash '$CURRENT_DIR/viewer.sh' '$tmpfile' \"\$popup_pane_width\"; rm -f '$tmpfile'"
+    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; rm -f '$tmpfile'"
 }
 
 main

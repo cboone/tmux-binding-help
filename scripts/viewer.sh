@@ -87,19 +87,17 @@ parse_input() {
 
 rebuild_visible() {
   VISIBLE=()
-  local i type gidx key cmd search_lower=""
+  local i type gidx
 
-  if [[ -n "$SEARCH_TERM" ]]; then
-    search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
-  fi
+  [[ -n "$SEARCH_TERM" ]] && shopt -s nocasematch
 
   for ((i = 0; i < ${#ITEM_TYPE[@]}; i++)); do
     type="${ITEM_TYPE[$i]}"
     gidx="${ITEM_GROUP[$i]}"
 
     if [[ "$type" == "group" ]]; then
-      if [[ -n "$search_lower" ]]; then
-        if group_has_matches "$gidx" "$search_lower"; then
+      if [[ -n "$SEARCH_TERM" ]]; then
+        if group_has_matches "$gidx"; then
           VISIBLE+=("$i")
         fi
       else
@@ -107,14 +105,12 @@ rebuild_visible() {
       fi
     elif [[ "$type" == "bind" ]]; then
       # Skip if group is collapsed (but not during search)
-      if [[ -z "$search_lower" ]] && ((gidx >= 0 && GROUP_COLLAPSED[gidx] == 1)); then
+      if [[ -z "$SEARCH_TERM" ]] && ((gidx >= 0 && GROUP_COLLAPSED[gidx] == 1)); then
         continue
       fi
 
-      if [[ -n "$search_lower" ]]; then
-        local item_lower
-        item_lower="$(printf '%s %s' "${ITEM_KEY[$i]}" "${ITEM_CMD[$i]}" | tr '[:upper:]' '[:lower:]')"
-        if [[ "$item_lower" != *"$search_lower"* ]]; then
+      if [[ -n "$SEARCH_TERM" ]]; then
+        if [[ "${ITEM_KEY[$i]} ${ITEM_CMD[$i]}" != *"$SEARCH_TERM"* ]]; then
           continue
         fi
       fi
@@ -122,6 +118,8 @@ rebuild_visible() {
       VISIBLE+=("$i")
     fi
   done
+
+  [[ -n "$SEARCH_TERM" ]] && shopt -u nocasematch
 
   # Clamp selection
   local max=$((${#VISIBLE[@]} - 1))
@@ -133,13 +131,11 @@ rebuild_visible() {
 }
 
 group_has_matches() {
-  local gidx="$1" search_lower="$2"
+  local gidx="$1"
   local i
   for ((i = 0; i < ${#ITEM_TYPE[@]}; i++)); do
     if [[ "${ITEM_TYPE[$i]}" == "bind" ]] && ((ITEM_GROUP[i] == gidx)); then
-      local item_lower
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$i]}" "${ITEM_CMD[$i]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$i]} ${ITEM_CMD[$i]}" == *"$SEARCH_TERM"* ]]; then
         return 0
       fi
     fi
@@ -150,9 +146,16 @@ group_has_matches() {
 # ── Rendering ──────────────────────────────────────────────────────────────────
 
 get_term_size() {
-  TERM_ROWS=$(tput lines 2>/dev/null || echo 24)
+  # stty size returns correct dimensions inside tmux popups; tput does not.
+  local size_rows size_cols
+  read -r size_rows size_cols < <(stty size 2>/dev/null) || true
+
+  TERM_ROWS="${size_rows:-24}"
+
   if [[ -n "$POPUP_WIDTH" ]] && ((POPUP_WIDTH > 2)); then
     TERM_COLS=$((POPUP_WIDTH - 2))
+  elif [[ -n "$size_cols" ]] && ((size_cols > 0)); then
+    TERM_COLS="$size_cols"
   else
     TERM_COLS=$(tput cols 2>/dev/null || echo 80)
   fi
@@ -160,7 +163,7 @@ get_term_size() {
 }
 
 ensure_visible() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 2))
   if ((SELECTED < SCROLL_OFFSET)); then
     SCROLL_OFFSET=$SELECTED
   elif ((SELECTED >= SCROLL_OFFSET + vh)); then
@@ -175,24 +178,22 @@ highlight_match() {
     return
   fi
 
-  local lower_text lower_search
-  lower_text="$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]')"
-  lower_search="$(printf '%s' "$search" | tr '[:upper:]' '[:lower:]')"
-
-  local prefix="${lower_text%%"$lower_search"*}"
-  if [[ "$prefix" == "$lower_text" ]]; then
-    printf '%s' "$text"
-    return
-  fi
-
-  local pos=${#prefix}
-  local slen=${#search}
-  printf '%s%s%s%s%s' \
-    "${text:0:pos}" \
-    "$COLOR_MATCH" \
-    "${text:pos:slen}" \
-    "$COLOR_RESET" \
-    "${text:pos+slen}"
+  local tlen=${#text} slen=${#search} pos
+  shopt -s nocasematch
+  for ((pos = 0; pos <= tlen - slen; pos++)); do
+    if [[ "${text:pos:slen}" == "$search" ]]; then
+      shopt -u nocasematch
+      printf '%s%s%s%s%s' \
+        "${text:0:pos}" \
+        "$COLOR_MATCH" \
+        "${text:pos:slen}" \
+        "$COLOR_RESET" \
+        "${text:pos+slen}"
+      return
+    fi
+  done
+  shopt -u nocasematch
+  printf '%s' "$text"
 }
 
 truncate() {
@@ -206,16 +207,11 @@ truncate() {
 
 render() {
   get_term_size
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 2))
   ensure_visible
 
-  # Move to top-left
-  printf '\033[H'
-
-  # ── Header ──
-  printf '\033[K%s tmux binding help%s  %s%d bindings%s\n' \
-    "$COLOR_GROUP" "$COLOR_RESET" \
-    "$COLOR_COUNT" "$TOTAL_BINDINGS" "$COLOR_RESET"
+  # Reset scroll region and move to top-left
+  printf '\033[;r\033[H'
 
   # Search bar or help hint
   if ((SEARCH_MODE)); then
@@ -229,14 +225,12 @@ render() {
     printf '\033[K %ssearch: %s (%d matches)  [n/N next/prev, Esc clear]%s\n' \
       "$COLOR_SEARCH" "$SEARCH_TERM" "$match_count" "$COLOR_RESET"
   else
-    printf '\033[K %sj/k:move  Enter/Tab:toggle  /:search  c/e:collapse/expand  q:quit%s\n' \
+    printf '\033[K %s/:search  c/e:collapse/expand all%s\n' \
       "$COLOR_HELP" "$COLOR_RESET"
   fi
 
   # ── Body ──
   local visible_count=${#VISIBLE[@]}
-  local max_cmd_width=$((TERM_COLS - 5 - KEY_COL_WIDTH - 1)) # indent + key col + 1 space minimum
-  ((max_cmd_width < 1)) && max_cmd_width=1
   local line_num i idx type gidx key cmd is_selected
 
   for ((line_num = 0; line_num < vh; line_num++)); do
@@ -264,7 +258,7 @@ render() {
       fi
 
       if ((is_selected)); then
-        printf '%s %s %s %s%s' "$COLOR_SELECTED" "$COLOR_ARROW$arrow" "$COLOR_RESET$COLOR_SELECTED" "$color$key" "$COLOR_RESET$COLOR_SELECTED"
+        printf '%s\033[1m %s %s%s' "$COLOR_SELECTED" "$arrow" "$key" "$COLOR_RESET$COLOR_SELECTED"
         local label_len=$((${#key} + 5))
         local pad=$((TERM_COLS - label_len))
         ((pad > 0)) && printf '%*s' "$pad" ""
@@ -278,9 +272,11 @@ render() {
       local pad=$((KEY_COL_WIDTH - key_len))
       ((pad < 1)) && pad=1
 
-      # Truncate long commands
+      # Truncate command to fit: indent(5) + key + pad + cmd <= TERM_COLS
+      local line_cmd_width=$((TERM_COLS - 5 - key_len - pad))
+      ((line_cmd_width < 1)) && line_cmd_width=1
       local display_cmd
-      display_cmd="$(truncate "$cmd" "$max_cmd_width")"
+      display_cmd="$(truncate "$cmd" "$line_cmd_width")"
 
       if ((is_selected)); then
         printf '%s     ' "$COLOR_SELECTED"
@@ -315,7 +311,7 @@ render() {
   done
 
   # ── Footer ──
-  printf '\033[K %s%d/%d%s\n' "$COLOR_HELP" "$((SELECTED + 1))" "$visible_count" "$COLOR_RESET"
+  printf '\033[K %s%d/%d%s' "$COLOR_HELP" "$((SELECTED + 1))" "$visible_count" "$COLOR_RESET"
 }
 
 # ── Navigation ─────────────────────────────────────────────────────────────────
@@ -362,14 +358,14 @@ move_top() {
 move_bottom() { SELECTED=$((${#VISIBLE[@]} - 1)); }
 
 page_up() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 2))
   SELECTED=$((SELECTED - vh))
   ((SELECTED < 0)) && SELECTED=0
   true
 }
 
 page_down() {
-  local vh=$((TERM_ROWS - 4))
+  local vh=$((TERM_ROWS - 2))
   local max=$((${#VISIBLE[@]} - 1))
   SELECTED=$((SELECTED + vh))
   ((SELECTED > max)) && SELECTED=$max
@@ -380,21 +376,21 @@ search_next() {
   [[ -z "$SEARCH_TERM" ]] && return 0
   local start=$((SELECTED + 1))
   local count=${#VISIBLE[@]}
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i idx vidx item_lower
+  shopt -s nocasematch
+  local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start + i) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 search_prev() {
@@ -402,40 +398,40 @@ search_prev() {
   local count=${#VISIBLE[@]}
   local start=$((SELECTED - 1))
   ((start < 0)) && start=$((count - 1))
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i idx vidx item_lower
+  shopt -s nocasematch
+  local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start - i + count) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 search_next_from_top() {
   [[ -z "$SEARCH_TERM" ]] && return 0
   local count=${#VISIBLE[@]}
-  local search_lower
-  search_lower="$(printf '%s' "$SEARCH_TERM" | tr '[:upper:]' '[:lower:]')"
 
-  local i vidx item_lower
+  shopt -s nocasematch
+  local i vidx
   for ((i = 0; i < count; i++)); do
     vidx="${VISIBLE[$i]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
-      item_lower="$(printf '%s %s' "${ITEM_KEY[$vidx]}" "${ITEM_CMD[$vidx]}" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$item_lower" == *"$search_lower"* ]]; then
+      if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
+        shopt -u nocasematch
         SELECTED=$i
         return 0
       fi
     fi
   done
+  shopt -u nocasematch
 }
 
 # ── Input reading ──────────────────────────────────────────────────────────────
@@ -512,8 +508,9 @@ main() {
   # Save terminal state and enter raw mode
   SAVED_TTY="$(stty -g 2>/dev/null)"
   trap cleanup EXIT
-  stty raw -echo 2>/dev/null
+  stty raw -echo opost 2>/dev/null
   tput smcup 2>/dev/null # Alternate screen
+  printf '\033[2J'       # Clear alternate screen
   tput civis 2>/dev/null # Hide cursor
   printf '\033[?25l'
 
