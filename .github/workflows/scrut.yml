@@ -1,0 +1,24 @@
+name: Scrut
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  scrut:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Scrut
+        run: cargo install --locked scrut
+
+      - name: Run Scrut tests
+        run: scrut test -w . tests

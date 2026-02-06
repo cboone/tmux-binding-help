@@ -1,0 +1,54 @@
+# Parses basic and repeat bindings
+
+```scrut
+$ printf '%s\n' \
+>   'bind-key -T prefix c new-window' \
+>   'bind-key -r -T prefix Up select-pane -U' \
+>   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+GROUP|Prefix (2)
+BIND|c|new-window
+BIND|Up (repeat)|select-pane -U
+```
+
+# Handles -N and -F options before key
+
+```scrut
+$ printf '%s\n' \
+>   'bind-key -N "pane split" -T prefix % split-window -h' \
+>   'bind-key -F "#{pane_id}" -T root MouseDown1Pane select-pane -t = && display-menu -T "Pane #{pane_index}"' \
+>   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+GROUP|Prefix (1)
+BIND|%|split-window -h
+GROUP|Root (no prefix) (1)
+BIND|MouseDown1Pane|select-pane -t = && display-menu -T "Pane #{pane_index}"
+```
+
+# Preserves escaped keys
+
+```scrut
+$ printf '%s\n' \
+>   'bind-key -T prefix C-\\ display-message hi' \
+>   'bind-key -T prefix \# display-message hash' \
+>   'bind-key -T prefix \; display-message semi' \
+>   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+GROUP|Prefix (3)
+BIND|C-\|display-message hi
+BIND|#|display-message hash
+BIND|;|display-message semi
+```
+
+# Appends custom tables after built-in order
+
+```scrut
+$ printf '%s\n' \
+>   'bind-key -T custom-table x display-message custom' \
+>   'bind-key -T root c new-window' \
+>   'bind-key -T prefix n next-window' \
+>   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+GROUP|Prefix (1)
+BIND|n|next-window
+GROUP|Root (no prefix) (1)
+BIND|c|new-window
+GROUP|custom-table (1)
+BIND|x|display-message custom
+```
