@@ -163,7 +163,7 @@ get_term_size() {
 }
 
 ensure_visible() {
-  local vh=$((TERM_ROWS - 3))
+  local vh=$((TERM_ROWS - 2))
   if ((SELECTED < SCROLL_OFFSET)); then
     SCROLL_OFFSET=$SELECTED
   elif ((SELECTED >= SCROLL_OFFSET + vh)); then
@@ -207,7 +207,7 @@ truncate() {
 
 render() {
   get_term_size
-  local vh=$((TERM_ROWS - 3))
+  local vh=$((TERM_ROWS - 2))
   ensure_visible
 
   # Reset scroll region and move to top-left
@@ -358,14 +358,14 @@ move_top() {
 move_bottom() { SELECTED=$((${#VISIBLE[@]} - 1)); }
 
 page_up() {
-  local vh=$((TERM_ROWS - 3))
+  local vh=$((TERM_ROWS - 2))
   SELECTED=$((SELECTED - vh))
   ((SELECTED < 0)) && SELECTED=0
   true
 }
 
 page_down() {
-  local vh=$((TERM_ROWS - 3))
+  local vh=$((TERM_ROWS - 2))
   local max=$((${#VISIBLE[@]} - 1))
   SELECTED=$((SELECTED + vh))
   ((SELECTED > max)) && SELECTED=$max
