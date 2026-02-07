@@ -49,8 +49,8 @@ SEARCH_MODE=0 # 1 when search input is active
 TERM_ROWS=0
 TERM_COLS=0
 KEY_COL_WIDTH=20 # width for the key column
-MOUSE_ROW=0       # row from last mouse event (1-based)
-MOUSE_COL=0       # col from last mouse event (1-based)
+MOUSE_ROW=0      # row from last mouse event (1-based)
+MOUSE_COL=0      # col from last mouse event (1-based)
 
 # ── Parse input ────────────────────────────────────────────────────────────────
 
@@ -492,8 +492,8 @@ read_key() {
           mouse_buf="${mouse_buf}${mouse_char}"
           mouse_count=$((mouse_count + 1))
         done
-        # Safety limit hit without terminator -- drain remaining bytes
-        if ((mouse_count >= 20)) && [[ "$mouse_char" != "M" && "$mouse_char" != "m" ]]; then
+        # Terminator missing -- drain remaining bytes and ignore event
+        if [[ "$mouse_char" != "M" && "$mouse_char" != "m" ]]; then
           while IFS= read -rsn1 -t 0.01 mouse_char 2>/dev/null; do
             [[ "$mouse_char" == "M" || "$mouse_char" == "m" ]] && break
           done
@@ -508,8 +508,16 @@ read_key() {
         # Parse button;col;row
         local mouse_button mouse_col mouse_row
         IFS=';' read -r mouse_button mouse_col mouse_row <<<"$mouse_buf"
-        MOUSE_ROW=$((mouse_row))
-        MOUSE_COL=$((mouse_col))
+        if ! [[ "$mouse_button" =~ ^[0-9]+$ && "$mouse_col" =~ ^[0-9]+$ && "$mouse_row" =~ ^[0-9]+$ ]]; then
+          printf 'MOUSE_OTHER'
+          return
+        fi
+        if ((mouse_col < 1 || mouse_row < 1)); then
+          printf 'MOUSE_OTHER'
+          return
+        fi
+        MOUSE_ROW=$mouse_row
+        MOUSE_COL=$mouse_col
         # Strip modifier bits (shift=4, meta=8, ctrl=16)
         mouse_button=$((mouse_button & ~(4 | 8 | 16)))
         case "$mouse_button" in
@@ -538,8 +546,8 @@ read_key() {
 # ── Main loop ──────────────────────────────────────────────────────────────────
 
 cleanup() {
-  printf '\033[?1006l' # Disable SGR extended mouse encoding
-  printf '\033[?1000l' # Disable button event tracking
+  printf '\033[?1006l'   # Disable SGR extended mouse encoding
+  printf '\033[?1000l'   # Disable button event tracking
   tput cnorm 2>/dev/null # Show cursor
   tput rmcup 2>/dev/null # Restore screen
   stty "$SAVED_TTY" 2>/dev/null
@@ -604,8 +612,16 @@ main() {
       MOUSE_LEFT)
         click_select "$MOUSE_ROW" || true
         ;;
-      MOUSE_SCROLL_UP) move_up; move_up; move_up ;;
-      MOUSE_SCROLL_DOWN) move_down; move_down; move_down ;;
+      MOUSE_SCROLL_UP)
+        move_up
+        move_up
+        move_up
+        ;;
+      MOUSE_SCROLL_DOWN)
+        move_down
+        move_down
+        move_down
+        ;;
       MOUSE_RELEASE | MOUSE_OTHER) ;;
       *)
         if [[ ${#key} -eq 1 ]] && [[ "$key" =~ [[:print:]] ]]; then
@@ -654,8 +670,16 @@ main() {
         fi
       fi
       ;;
-    MOUSE_SCROLL_UP) move_up; move_up; move_up ;;
-    MOUSE_SCROLL_DOWN) move_down; move_down; move_down ;;
+    MOUSE_SCROLL_UP)
+      move_up
+      move_up
+      move_up
+      ;;
+    MOUSE_SCROLL_DOWN)
+      move_down
+      move_down
+      move_down
+      ;;
     MOUSE_RELEASE | MOUSE_OTHER) ;;
     esac
   done
