@@ -6,7 +6,7 @@
 #   - Collapsible groups (expanded by default)
 #   - Keyboard navigation (j/k/Up/Down, g/G, PgUp/PgDn)
 #   - Search with / (incremental filtering)
-#   - Mouse support (click to select, scroll wheel, click header to search)
+#   - Mouse support (click to select, scroll wheel, click headers to collapse/expand or search)
 #   - Toggle groups with Enter/Space/Tab
 #   - Collapse/expand all with c/e
 #   - Press q or Escape to quit
@@ -49,8 +49,7 @@ SEARCH_MODE=0 # 1 when search input is active
 TERM_ROWS=0
 TERM_COLS=0
 KEY_COL_WIDTH=20 # width for the key column
-MOUSE_ROW=0      # row from last mouse event (1-based)
-MOUSE_COL=0      # col from last mouse event (1-based)
+MOUSE_ROW=0 # row from last mouse event (1-based)
 
 # ── Parse input ────────────────────────────────────────────────────────────────
 
@@ -517,7 +516,6 @@ read_key() {
           return
         fi
         MOUSE_ROW=$mouse_row
-        MOUSE_COL=$mouse_col
         # Strip modifier bits (shift=4, meta=8, ctrl=16)
         mouse_button=$((mouse_button & ~(4 | 8 | 16)))
         case "$mouse_button" in
