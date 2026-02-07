@@ -3,8 +3,10 @@
 Interactive popup showing all tmux key bindings, organized by table.
 
 Bindings are grouped into collapsible sections (Prefix, Root, Copy Mode vi,
-Copy Mode emacs, plus any custom tables). Navigate with the keyboard, search
-incrementally, and collapse/expand groups.
+Copy Mode emacs, plus any custom tables). Mouse bindings are separated into
+their own groups (Mouse root, Mouse copy-mode-vi, etc.) so keyboard shortcuts
+are easy to scan. Navigate with the keyboard or mouse, search incrementally,
+and collapse/expand groups.
 
 Requires **tmux 3.2+** (for `display-popup`). No external dependencies.
 
@@ -34,20 +36,36 @@ Press **`prefix + ?`** to open the help popup.
 
 ### Keyboard controls
 
-| Key              | Action                        |
-| ---------------- | ----------------------------- |
-| `j` / `k`        | Move down / up                |
-| `Down` / `Up`    | Move down / up                |
-| `g` / `G`        | Jump to top / bottom          |
-| `PgUp` / `PgDn`  | Page up / down                |
-| `Enter` / `Tab`  | Toggle group collapse         |
-| `Space`          | Toggle group collapse         |
-| `c`              | Collapse all groups           |
-| `e`              | Expand all groups             |
-| `/`              | Start search                  |
-| `n` / `N`        | Next / previous search match  |
-| `Escape`         | Clear search, or quit         |
-| `q`              | Quit                          |
+| Key                | Action                        |
+| ------------------ | ----------------------------- |
+| `j` / `k`          | Move down / up                |
+| `Down` / `Up`      | Move down / up                |
+| `g` / `G`          | Jump to top / bottom          |
+| `Home` / `End`     | Jump to top / bottom          |
+| `PgUp` / `PgDn`    | Page up / down                |
+| `Enter` / `Tab`    | Toggle group collapse         |
+| `Space`            | Toggle group collapse         |
+| `c`                | Collapse all groups           |
+| `e`                | Expand all groups             |
+| `/`                | Start search                  |
+| `n` / `N`          | Next / previous search match  |
+| `Escape`           | Clear search, or quit         |
+| `q`                | Quit                          |
+
+### Mouse controls
+
+| Action                | Effect                          |
+| --------------------- | ------------------------------- |
+| Click a binding       | Select it                       |
+| Click a group header  | Toggle collapse                 |
+| Click the header row  | Start search                    |
+| Scroll wheel          | Move selection up/down          |
+
+### Search
+
+Search is case-insensitive and matches against both key names and commands.
+Matching text is highlighted, and the status bar shows the number of matches.
+Groups auto-expand when a search is active so all results are visible.
 
 ## Configuration
 
