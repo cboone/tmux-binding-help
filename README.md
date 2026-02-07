@@ -4,7 +4,7 @@ Interactive popup showing all tmux key bindings, organized by table.
 
 Bindings are grouped into collapsible sections (Prefix, Root, Copy Mode vi,
 Copy Mode emacs, plus any custom tables). Mouse bindings are separated into
-their own groups (Mouse root, Mouse copy-mode-vi, etc.) so keyboard shortcuts
+their own groups (Mouse (root), Mouse (copy-mode-vi), etc.) so keyboard shortcuts
 are easy to scan. Navigate with the keyboard or mouse, search incrementally,
 and collapse/expand groups.
 
@@ -24,11 +24,17 @@ Then press `prefix + I` to install.
 
 ### Manual
 
-Clone the repo and source it:
+Clone the repo:
+
+```bash
+git clone --depth 1 https://github.com/cboone/tmux-binding-help.git \
+  "${XDG_DATA_HOME:-$HOME/.local/share}"/tmux/plugins/tmux-binding-help
+```
+
+Then add to `~/.tmux.conf`:
 
 ```tmux
-git clone --depth 1 https://github.com/cboone/tmux-bindin-help.git $XDG_DATA_HOME/tmux/plugins/tmux-binding-help
-run-shell $XDG_DATA_HOME/tmux/plugins/tmux-binding-help/tmux-binding-help.tmux
+run-shell ~/.local/share/tmux/plugins/tmux-binding-help/tmux-binding-help.tmux
 ```
 
 ### With [TPM](https://github.com/tmux-plugins/tpm) (deprecated)
