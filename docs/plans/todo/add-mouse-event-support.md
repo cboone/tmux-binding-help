@@ -46,10 +46,13 @@ distinguishes press (`M`) from release (`m`).
 Add a `'<'` case inside the existing `case "$seq"` block (after `ESC [`):
 
 - Read characters in a loop until `M` (press) or `m` (release), with a 20-char safety limit
+- If the safety limit is hit, non-blockingly drain remaining bytes for that mouse sequence
+  until `M`/`m` (or timeout), then return `MOUSE_OTHER`
 - Ignore release events (`m`) by returning `MOUSE_RELEASE`
 - Parse `button;col;row` from the sequence
 - Set `MOUSE_ROW` and `MOUSE_COL` globals
-- Return token based on button code:
+- Strip modifier bits from `button` before mapping (`4`, `8`, `16`)
+- Return token based on normalized button code:
   - 0 -> `MOUSE_LEFT`
   - 64 -> `MOUSE_SCROLL_UP`
   - 65 -> `MOUSE_SCROLL_DOWN`
@@ -81,7 +84,7 @@ click_select() {
 
 | Token | Behavior |
 |-------|----------|
-| `MOUSE_LEFT` on row 1 (header) | Enter search mode |
+| `MOUSE_LEFT` on row 1 (header) | Enter search mode and clear any existing `SEARCH_TERM` (same behavior as `/`) |
 | `MOUSE_LEFT` on body row | Select item; if group, also toggle collapse/expand |
 | `MOUSE_LEFT` on footer | Ignore |
 | `MOUSE_SCROLL_UP` | `move_up` x3 |
@@ -107,11 +110,12 @@ Add mouse support to the feature list at the top of the file.
 
 ## Verification
 
-1. Open tmux and run `prefix + ?` to launch the popup
-2. **Click**: Click on a binding item -- it should become selected (reverse video)
-3. **Click group**: Click on a group header -- it should toggle collapse/expand
-4. **Click header**: Click the top row -- search mode should activate
-5. **Scroll**: Use mouse wheel -- selection should move up/down by 3 items
-6. **Search + scroll**: Enter search mode, type a term, then scroll through results
-7. **Edge cases**: Click on empty body area below last item (should be ignored), click footer (ignored)
-8. **Quit**: Press `q` -- terminal should restore cleanly (no lingering mouse tracking)
+1. Ensure tmux mouse mode is enabled: `set -g mouse on`
+2. Open tmux and run `prefix + ?` to launch the popup
+3. **Click**: Click on a binding item -- it should become selected (reverse video)
+4. **Click group**: Click on a group header -- it should toggle collapse/expand
+5. **Click header**: Click the top row -- search mode should activate and search term should clear
+6. **Scroll**: Use mouse wheel -- selection should move up/down by 3 items
+7. **Search + scroll**: Enter search mode, type a term, then scroll through results
+8. **Edge cases**: Click on empty body area below last item (should be ignored), click footer (ignored)
+9. **Quit**: Press `q` -- terminal should restore cleanly (no lingering mouse tracking)
