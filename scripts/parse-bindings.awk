@@ -23,6 +23,18 @@ BEGIN {
     table_label["root"]         = "Root (no prefix)"
     table_label["copy-mode-vi"] = "Copy Mode (vi)"
     table_label["copy-mode"]    = "Copy Mode (emacs)"
+
+    # Mouse groups appear after all keyboard groups
+    order_count++
+    order_arr[order_count] = "mouse:root"
+    order_count++
+    order_arr[order_count] = "mouse:copy-mode-vi"
+    order_count++
+    order_arr[order_count] = "mouse:copy-mode"
+
+    table_label["mouse:root"]         = "Mouse (root)"
+    table_label["mouse:copy-mode-vi"] = "Mouse (copy-mode-vi)"
+    table_label["mouse:copy-mode"]    = "Mouse (copy-mode)"
 }
 
 /^bind-key/ {
@@ -79,18 +91,27 @@ BEGIN {
         cmd = cmd (cmd == "" ? "" : " ") $i
     }
 
+    # Light unescape of common tmux-escaped key literals.
+    key = unescape_key(key)
+
+    # Route mouse events to dedicated mouse groups
+    if (is_mouse_key(key)) {
+        table = "mouse:" table
+    }
+
     # Register new tables we haven't seen
     if (!(table in table_seen)) {
         table_seen[table] = 1
         if (!(table in table_label)) {
-            table_label[table] = table
+            if (table ~ /^mouse:/) {
+                table_label[table] = "Mouse (" substr(table, 7) ")"
+            } else {
+                table_label[table] = table
+            }
             order_count++
             order_arr[order_count] = table
         }
     }
-
-    # Light unescape of common tmux-escaped key literals.
-    key = unescape_key(key)
 
     count[table]++
     idx = count[table]
@@ -137,19 +158,33 @@ function unescape_key(raw,    out, i, c, len) {
     return out
 }
 
+function is_mouse_key(k,    bare) {
+    bare = k
+    while (bare ~ /^[CMS]-/) {
+        bare = substr(bare, 3)
+    }
+    return (bare ~ /^(Mouse|Wheel|DoubleClick|TripleClick)/)
+}
+
 END {
     for (i = 1; i <= order_count; i++) {
         t = order_arr[i]
+        if (t ~ /^mouse:/) continue
         if (count[t] == 0) continue
-
         label = table_label[t]
         if (label == "") label = t
         printf "GROUP\t%s (%d)\n", label, count[t]
-
-        for (j = 1; j <= count[t]; j++) {
-            k = keys[t, j]
-            c = cmds[t, j]
-            printf "BIND\t%s\t%s\n", k, c
-        }
+        for (j = 1; j <= count[t]; j++)
+            printf "BIND\t%s\t%s\n", keys[t, j], cmds[t, j]
+    }
+    for (i = 1; i <= order_count; i++) {
+        t = order_arr[i]
+        if (t !~ /^mouse:/) continue
+        if (count[t] == 0) continue
+        label = table_label[t]
+        if (label == "") label = t
+        printf "GROUP\t%s (%d)\n", label, count[t]
+        for (j = 1; j <= count[t]; j++)
+            printf "BIND\t%s\t%s\n", keys[t, j], cmds[t, j]
     }
 }
