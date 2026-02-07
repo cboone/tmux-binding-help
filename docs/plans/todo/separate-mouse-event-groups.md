@@ -28,9 +28,16 @@ function is_mouse_key(k,    bare) {
 }
 ```
 
-**2. Add mouse group labels in `BEGIN`** (after existing `table_label` entries):
+**2. Seed mouse groups in `BEGIN` (order + labels)** so known mouse tables are always emitted:
 
 ```awk
+order_count++
+order_arr[order_count] = "mouse:root"
+order_count++
+order_arr[order_count] = "mouse:copy-mode-vi"
+order_count++
+order_arr[order_count] = "mouse:copy-mode"
+
 table_label["mouse:root"]         = "Mouse (root)"
 table_label["mouse:copy-mode-vi"] = "Mouse (copy-mode-vi)"
 table_label["mouse:copy-mode"]    = "Mouse (copy-mode)"
