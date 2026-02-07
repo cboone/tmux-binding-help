@@ -493,8 +493,11 @@ read_key() {
         done
         # Terminator missing -- drain remaining bytes and ignore event
         if [[ "$mouse_char" != "M" && "$mouse_char" != "m" ]]; then
-          while IFS= read -rsn1 -t 0.01 mouse_char 2>/dev/null; do
+          local drain_count=0
+          while ((drain_count < 20)); do
+            IFS= read -rsn1 -t 0.01 mouse_char 2>/dev/null || break
             [[ "$mouse_char" == "M" || "$mouse_char" == "m" ]] && break
+            drain_count=$((drain_count + 1))
           done
           printf 'MOUSE_OTHER'
           return
@@ -652,6 +655,7 @@ main() {
     /)
       SEARCH_MODE=1
       SEARCH_TERM=""
+      rebuild_visible
       ;;
     n) search_next ;;
     N) search_prev ;;
@@ -661,6 +665,7 @@ main() {
       if ((MOUSE_ROW == 1)); then
         SEARCH_MODE=1
         SEARCH_TERM=""
+        rebuild_visible
       elif click_select "$MOUSE_ROW"; then
         local click_idx="${VISIBLE[$SELECTED]}"
         if [[ "${ITEM_TYPE[$click_idx]}" == "group" ]]; then
