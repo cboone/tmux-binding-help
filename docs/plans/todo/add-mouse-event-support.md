@@ -17,10 +17,10 @@ After the existing state variables (~line 50), add:
 
 ```bash
 MOUSE_ROW=0  # row from last mouse event (1-based)
-MOUSE_COL=0  # col from last mouse event (1-based)
 ```
 
-These are set by `read_key()` and read by the main loop.
+This is set by `read_key()` and read by the main loop. The column coordinate
+is parsed for validation but not persisted, as no current behavior requires it.
 
 ### 2. Enable/disable mouse tracking
 
@@ -50,7 +50,7 @@ Add a `'<'` case inside the existing `case "$seq"` block (after `ESC [`):
   until `M`/`m` (or timeout), then return `MOUSE_OTHER`
 - Ignore release events (`m`) by returning `MOUSE_RELEASE`
 - Parse `button;col;row` from the sequence
-- Set `MOUSE_ROW` and `MOUSE_COL` globals
+- Set the `MOUSE_ROW` global (column is validated but not persisted)
 - Strip modifier bits from `button` before mapping (`4`, `8`, `16`)
 - Return token based on normalized button code:
   - 0 -> `MOUSE_LEFT`
