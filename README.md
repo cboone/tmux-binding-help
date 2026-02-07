@@ -27,11 +27,13 @@ Then press `prefix + I` to install.
 Clone the repo and source it:
 
 ```tmux
-run-shell /path/to/tmux-binding-help/tmux-binding-help.tmux
+git clone --depth 1 https://github.com/cboone/tmux-bindin-help.git $XDG_DATA_HOME/tmux/plugins/tmux-binding-help
+run-shell $XDG_DATA_HOME/tmux/plugins/tmux-binding-help/tmux-binding-help.tmux
 ```
 
 ### With [TPM](https://github.com/tmux-plugins/tpm) (deprecated)
 
+> [!WARNING]
 > The original TPM has not been updated since February 2023. TPM Redux is a
 > backward-compatible reimplementation with a maintained codebase, a proper test
 > suite, and active development. The plugin format is the same, so switching
@@ -51,30 +53,30 @@ Press **`prefix + ?`** to open the help popup.
 
 ### Keyboard controls
 
-| Key                | Action                        |
-| ------------------ | ----------------------------- |
-| `j` / `k`          | Move down / up                |
-| `Down` / `Up`      | Move down / up                |
-| `g` / `G`          | Jump to top / bottom          |
-| `Home` / `End`     | Jump to top / bottom          |
-| `PgUp` / `PgDn`    | Page up / down                |
-| `Enter` / `Tab`    | Toggle group collapse         |
-| `Space`            | Toggle group collapse         |
-| `c`                | Collapse all groups           |
-| `e`                | Expand all groups             |
-| `/`                | Start search                  |
-| `n` / `N`          | Next / previous search match  |
-| `Escape`           | Clear search, or quit         |
-| `q`                | Quit                          |
+| Key             | Action                       |
+| --------------- | ---------------------------- |
+| `j` / `k`       | Move down / up               |
+| `Down` / `Up`   | Move down / up               |
+| `g` / `G`       | Jump to top / bottom         |
+| `Home` / `End`  | Jump to top / bottom         |
+| `PgUp` / `PgDn` | Page up / down               |
+| `Enter` / `Tab` | Toggle group collapse        |
+| `Space`         | Toggle group collapse        |
+| `c`             | Collapse all groups          |
+| `e`             | Expand all groups            |
+| `/`             | Start search                 |
+| `n` / `N`       | Next / previous search match |
+| `Escape`        | Clear search, or quit        |
+| `q`             | Quit                         |
 
 ### Mouse controls
 
-| Action                | Effect                          |
-| --------------------- | ------------------------------- |
-| Click a binding       | Select it                       |
-| Click a group header  | Toggle collapse                 |
-| Click the header row  | Start search                    |
-| Scroll wheel          | Move selection up/down          |
+| Action               | Effect                 |
+| -------------------- | ---------------------- |
+| Click a binding      | Select it              |
+| Click a group header | Toggle collapse        |
+| Click the header row | Start search           |
+| Scroll wheel         | Move selection up/down |
 
 ### Search
 
@@ -101,4 +103,4 @@ scrut test -w . tests
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Have fun.
