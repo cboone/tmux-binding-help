@@ -12,7 +12,7 @@ Requires **tmux 3.2+** (for `display-popup`). No external dependencies.
 
 ## Install
 
-### With [TPM](https://github.com/tmux-plugins/tpm)
+### With [TPM Redux](https://github.com/RyanMacG/tpm-redux) (recommended)
 
 Add to `~/.tmux.conf`:
 
@@ -29,6 +29,21 @@ Clone the repo and source it:
 ```tmux
 run-shell /path/to/tmux-binding-help/tmux-binding-help.tmux
 ```
+
+### With [TPM](https://github.com/tmux-plugins/tpm) (deprecated)
+
+> The original TPM has not been updated since February 2023. TPM Redux is a
+> backward-compatible reimplementation with a maintained codebase, a proper test
+> suite, and active development. The plugin format is the same, so switching
+> requires only replacing TPM with TPM Redux.
+
+Add to `~/.tmux.conf`:
+
+```tmux
+set -g @plugin 'cboone/tmux-binding-help'
+```
+
+Then press `prefix + I` to install.
 
 ## Usage
 
