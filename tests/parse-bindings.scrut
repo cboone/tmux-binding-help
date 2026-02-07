@@ -19,7 +19,7 @@ $ printf '%s\n' \
 >   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Prefix (1)
 BIND|%|split-window -h
-GROUP|Root (no prefix) (1)
+GROUP|Mouse (root) (1)
 BIND|MouseDown1Pane|select-pane -t = && display-menu -T "Pane #{pane_index}"
 ```
 
@@ -51,4 +51,27 @@ GROUP|Root (no prefix) (1)
 BIND|c|new-window
 GROUP|custom-table (1)
 BIND|x|display-message custom
+```
+
+# Separates mouse events into dedicated groups after keyboard groups
+
+```scrut
+$ printf '%s\n' \
+>   'bind-key -T root n next-window' \
+>   'bind-key -T root MouseDown1Pane select-pane' \
+>   'bind-key -T root WheelUpPane scroll-up' \
+>   'bind-key -T copy-mode-vi MouseDrag1Pane begin-selection' \
+>   'bind-key -T copy-mode-vi v send-keys -X begin-selection' \
+>   'bind-key -T root M-DoubleClick1Pane resize-pane -Z' \
+>   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+GROUP|Root (no prefix) (1)
+BIND|n|next-window
+GROUP|Copy Mode (vi) (1)
+BIND|v|send-keys -X begin-selection
+GROUP|Mouse (root) (3)
+BIND|MouseDown1Pane|select-pane
+BIND|WheelUpPane|scroll-up
+BIND|M-DoubleClick1Pane|resize-pane -Z
+GROUP|Mouse (copy-mode-vi) (1)
+BIND|MouseDrag1Pane|begin-selection
 ```
