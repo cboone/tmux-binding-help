@@ -28,7 +28,7 @@ function is_mouse_key(k,    bare) {
 }
 ```
 
-**2. Seed mouse groups in `BEGIN` (order + labels)** so known mouse tables are always emitted:
+**2. Seed mouse groups in `BEGIN` (order + labels)** so known mouse tables have a stable ordering and labeling when present:
 
 ```awk
 order_count++
