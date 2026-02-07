@@ -11,16 +11,13 @@ All changes are confined to `scripts/viewer.sh`. No other files need code change
 
 ## Implementation
 
-### 1. Add mouse coordinate globals
+### 1. Mouse row encoding
 
-After the existing state variables (~line 50), add:
-
-```bash
-MOUSE_ROW=0  # row from last mouse event (1-based)
-```
-
-This is set by `read_key()` and read by the main loop. The column coordinate
-is parsed for validation but not persisted, as no current behavior requires it.
+The mouse row is encoded into the `MOUSE_LEFT` token returned by `read_key()`
+as `MOUSE_LEFT:ROW` (e.g., `MOUSE_LEFT:5`). The main loop extracts the row
+before dispatching. No global variable is needed, avoiding subshell side-effect
+issues with `key="$(read_key)"`. The column coordinate is parsed for validation
+but not persisted, as no current behavior requires it.
 
 ### 2. Enable/disable mouse tracking
 
@@ -50,10 +47,10 @@ Add a `'<'` case inside the existing `case "$seq"` block (after `ESC [`):
   until `M`/`m` (or timeout), then return `MOUSE_OTHER`
 - Ignore release events (`m`) by returning `MOUSE_RELEASE`
 - Parse `button;col;row` from the sequence
-- Set the `MOUSE_ROW` global (column is validated but not persisted)
+- Validate column and row are numeric and >= 1
 - Strip modifier bits from `button` before mapping (`4`, `8`, `16`)
 - Return token based on normalized button code:
-  - 0 -> `MOUSE_LEFT`
+  - 0 -> `MOUSE_LEFT:ROW` (row encoded in token)
   - 64 -> `MOUSE_SCROLL_UP`
   - 65 -> `MOUSE_SCROLL_DOWN`
   - Everything else -> `MOUSE_OTHER` (ignored by main loop)

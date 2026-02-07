@@ -49,7 +49,6 @@ SEARCH_MODE=0 # 1 when search input is active
 TERM_ROWS=0
 TERM_COLS=0
 KEY_COL_WIDTH=20 # width for the key column
-MOUSE_ROW=0 # row from last mouse event (1-based)
 
 # ── Parse input ────────────────────────────────────────────────────────────────
 
@@ -518,11 +517,10 @@ read_key() {
           printf 'MOUSE_OTHER'
           return
         fi
-        MOUSE_ROW=$mouse_row
         # Strip modifier bits (shift=4, meta=8, ctrl=16)
         mouse_button=$((mouse_button & ~(4 | 8 | 16)))
         case "$mouse_button" in
-        0) printf 'MOUSE_LEFT' ;;
+        0) printf 'MOUSE_LEFT:%d' "$mouse_row" ;;
         64) printf 'MOUSE_SCROLL_UP' ;;
         65) printf 'MOUSE_SCROLL_DOWN' ;;
         *) printf 'MOUSE_OTHER' ;;
@@ -588,6 +586,13 @@ main() {
 
     key="$(read_key)" || continue
 
+    # Extract mouse row from MOUSE_LEFT:ROW token
+    local mouse_row=0
+    if [[ "$key" == MOUSE_LEFT:* ]]; then
+      mouse_row="${key#MOUSE_LEFT:}"
+      key="MOUSE_LEFT"
+    fi
+
     if ((SEARCH_MODE)); then
       case "$key" in
       ENTER)
@@ -611,7 +616,7 @@ main() {
         rebuild_visible
         ;;
       MOUSE_LEFT)
-        click_select "$MOUSE_ROW" || true
+        click_select "$mouse_row" || true
         ;;
       MOUSE_SCROLL_UP)
         move_up
@@ -662,11 +667,11 @@ main() {
     c) collapse_all ;;
     e) expand_all ;;
     MOUSE_LEFT)
-      if ((MOUSE_ROW == 1)); then
+      if ((mouse_row == 1)); then
         SEARCH_MODE=1
         SEARCH_TERM=""
         rebuild_visible
-      elif click_select "$MOUSE_ROW"; then
+      elif click_select "$mouse_row"; then
         local click_idx="${VISIBLE[$SELECTED]}"
         if [[ "${ITEM_TYPE[$click_idx]}" == "group" ]]; then
           toggle_group
