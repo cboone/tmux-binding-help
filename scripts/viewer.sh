@@ -6,6 +6,7 @@
 #   - Collapsible groups (expanded by default)
 #   - Keyboard navigation (j/k/Up/Down, g/G, PgUp/PgDn)
 #   - Search with / (incremental filtering)
+#   - Mouse support (click to select, scroll wheel, click headers to collapse/expand or search)
 #   - Toggle groups with Enter/Space/Tab
 #   - Collapse/expand all with c/e
 #   - Press q or Escape to quit
@@ -434,6 +435,20 @@ search_next_from_top() {
   shopt -u nocasematch
 }
 
+click_select() {
+  local row="$1"
+  # Body occupies rows 2 through TERM_ROWS-1
+  if ((row < 2 || row > TERM_ROWS - 1)); then
+    return 1
+  fi
+  local target=$((SCROLL_OFFSET + row - 2))
+  if ((target < 0 || target >= ${#VISIBLE[@]})); then
+    return 1
+  fi
+  SELECTED=$target
+  return 0
+}
+
 # ── Input reading ──────────────────────────────────────────────────────────────
 
 read_key() {
@@ -464,6 +479,53 @@ read_key() {
         IFS= read -rsn1 _ 2>/dev/null
         printf 'PGDN'
         ;;
+      '<')
+        # SGR extended mouse: ESC [ < button;col;row M/m
+        local mouse_buf="" mouse_char="" mouse_count=0
+        while ((mouse_count < 20)); do
+          IFS= read -rsn1 -t 0.05 mouse_char 2>/dev/null || break
+          if [[ "$mouse_char" == "M" || "$mouse_char" == "m" ]]; then
+            break
+          fi
+          mouse_buf="${mouse_buf}${mouse_char}"
+          mouse_count=$((mouse_count + 1))
+        done
+        # Terminator missing -- drain remaining bytes and ignore event
+        if [[ "$mouse_char" != "M" && "$mouse_char" != "m" ]]; then
+          local drain_count=0
+          while ((drain_count < 20)); do
+            IFS= read -rsn1 -t 0.01 mouse_char 2>/dev/null || break
+            [[ "$mouse_char" == "M" || "$mouse_char" == "m" ]] && break
+            drain_count=$((drain_count + 1))
+          done
+          printf 'MOUSE_OTHER'
+          return
+        fi
+        # Ignore release events
+        if [[ "$mouse_char" == "m" ]]; then
+          printf 'MOUSE_RELEASE'
+          return
+        fi
+        # Parse button;col;row
+        local mouse_button mouse_col mouse_row
+        IFS=';' read -r mouse_button mouse_col mouse_row <<<"$mouse_buf"
+        if ! [[ "$mouse_button" =~ ^[0-9]+$ && "$mouse_col" =~ ^[0-9]+$ && "$mouse_row" =~ ^[0-9]+$ ]]; then
+          printf 'MOUSE_OTHER'
+          return
+        fi
+        if ((mouse_col < 1 || mouse_row < 1)); then
+          printf 'MOUSE_OTHER'
+          return
+        fi
+        # Strip modifier bits (shift=4, meta=8, ctrl=16)
+        mouse_button=$((mouse_button & ~(4 | 8 | 16)))
+        case "$mouse_button" in
+        0) printf 'MOUSE_LEFT:%d' "$mouse_row" ;;
+        64) printf 'MOUSE_SCROLL_UP' ;;
+        65) printf 'MOUSE_SCROLL_DOWN' ;;
+        *) printf 'MOUSE_OTHER' ;;
+        esac
+        ;;
       *) printf 'UNKNOWN' ;;
       esac
     else
@@ -483,6 +545,8 @@ read_key() {
 # ── Main loop ──────────────────────────────────────────────────────────────────
 
 cleanup() {
+  printf '\033[?1006l'   # Disable SGR extended mouse encoding
+  printf '\033[?1000l'   # Disable button event tracking
   tput cnorm 2>/dev/null # Show cursor
   tput rmcup 2>/dev/null # Restore screen
   stty "$SAVED_TTY" 2>/dev/null
@@ -513,12 +577,21 @@ main() {
   printf '\033[2J'       # Clear alternate screen
   tput civis 2>/dev/null # Hide cursor
   printf '\033[?25l'
+  printf '\033[?1000h' # Enable button event tracking
+  printf '\033[?1006h' # Enable SGR extended mouse encoding
 
   local key
   while true; do
     render
 
     key="$(read_key)" || continue
+
+    # Extract mouse row from MOUSE_LEFT:ROW token
+    local mouse_row=0
+    if [[ "$key" == MOUSE_LEFT:* ]]; then
+      mouse_row="${key#MOUSE_LEFT:}"
+      key="MOUSE_LEFT"
+    fi
 
     if ((SEARCH_MODE)); then
       case "$key" in
@@ -542,6 +615,20 @@ main() {
         fi
         rebuild_visible
         ;;
+      MOUSE_LEFT)
+        click_select "$mouse_row" || true
+        ;;
+      MOUSE_SCROLL_UP)
+        move_up
+        move_up
+        move_up
+        ;;
+      MOUSE_SCROLL_DOWN)
+        move_down
+        move_down
+        move_down
+        ;;
+      MOUSE_RELEASE | MOUSE_OTHER) ;;
       *)
         if [[ ${#key} -eq 1 ]] && [[ "$key" =~ [[:print:]] ]]; then
           SEARCH_TERM="${SEARCH_TERM}${key}"
@@ -573,11 +660,35 @@ main() {
     /)
       SEARCH_MODE=1
       SEARCH_TERM=""
+      rebuild_visible
       ;;
     n) search_next ;;
     N) search_prev ;;
     c) collapse_all ;;
     e) expand_all ;;
+    MOUSE_LEFT)
+      if ((mouse_row == 1)); then
+        SEARCH_MODE=1
+        SEARCH_TERM=""
+        rebuild_visible
+      elif click_select "$mouse_row"; then
+        local click_idx="${VISIBLE[$SELECTED]}"
+        if [[ "${ITEM_TYPE[$click_idx]}" == "group" ]]; then
+          toggle_group
+        fi
+      fi
+      ;;
+    MOUSE_SCROLL_UP)
+      move_up
+      move_up
+      move_up
+      ;;
+    MOUSE_SCROLL_DOWN)
+      move_down
+      move_down
+      move_down
+      ;;
+    MOUSE_RELEASE | MOUSE_OTHER) ;;
     esac
   done
 }
