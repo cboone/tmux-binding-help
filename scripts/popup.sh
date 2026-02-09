@@ -7,7 +7,7 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 main() {
   local data
-  data="$(tmux list-keys | awk -f "$CURRENT_DIR/parse-bindings.awk")"
+  data="$(tmux list-keys | LC_ALL=C awk -f "$CURRENT_DIR/parse-bindings.awk")"
 
   if [[ -z "$data" ]]; then
     tmux display-message "tmux-binding-help: no bindings found"

@@ -166,11 +166,32 @@ function is_mouse_key(k,    bare) {
     return (bare ~ /^(Mouse|Wheel|DoubleClick|TripleClick)/)
 }
 
+# Insertion sort: order bindings within a table by key text (case-sensitive).
+function sort_bindings(t,    i, j, n, tmp_key, tmp_cmd, a, b) {
+    n = count[t]
+    for (i = 2; i <= n; i++) {
+        tmp_key = keys[t, i]
+        tmp_cmd = cmds[t, i]
+        a = tmp_key
+        j = i - 1
+        while (j >= 1) {
+            b = keys[t, j]
+            if (b <= a) break
+            keys[t, j + 1] = keys[t, j]
+            cmds[t, j + 1] = cmds[t, j]
+            j--
+        }
+        keys[t, j + 1] = tmp_key
+        cmds[t, j + 1] = tmp_cmd
+    }
+}
+
 END {
     for (i = 1; i <= order_count; i++) {
         t = order_arr[i]
         if (t ~ /^mouse:/) continue
         if (count[t] == 0) continue
+        sort_bindings(t)
         label = table_label[t]
         if (label == "") label = t
         printf "GROUP\t%s (%d)\n", label, count[t]
@@ -181,6 +202,7 @@ END {
         t = order_arr[i]
         if (t !~ /^mouse:/) continue
         if (count[t] == 0) continue
+        sort_bindings(t)
         label = table_label[t]
         if (label == "") label = t
         printf "GROUP\t%s (%d)\n", label, count[t]
