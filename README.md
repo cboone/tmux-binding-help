@@ -99,7 +99,7 @@ set -g @tmux-binding-help-key '?'
 
 ## Testing
 
-Parser behavior is covered with [Scrut](https://github.com/jorisvink/scrut) tests.
+Parser behavior is covered with [Scrut](https://github.com/facebookincubator/scrut) tests.
 
 Run tests from the repository root:
 

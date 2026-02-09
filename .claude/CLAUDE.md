@@ -36,7 +36,7 @@ tmux-binding-help.tmux → scripts/popup.sh → scripts/parse-bindings.awk → s
 
 3. **`scripts/parse-bindings.awk`** -- Parses raw `tmux list-keys` output into TAB-delimited `GROUP` and `BIND` lines. Routes mouse events to virtual `mouse:<table>` groups (internal convention, never exposed to tmux). Uses a two-pass END block: keyboard groups first, then mouse groups.
 
-4. **`scripts/viewer.sh`** -- Interactive TUI (696 lines). Uses parallel arrays for data, supports keyboard navigation (j/k, arrows, g/G, PgUp/PgDn), SGR mouse mode (click, scroll), incremental search with highlighting, and collapsible groups.
+4. **`scripts/viewer.sh`** -- Interactive TUI. Uses parallel arrays for data, supports keyboard navigation (j/k, arrows, g/G, PgUp/PgDn), SGR mouse mode (click, scroll), incremental search with highlighting, and collapsible groups.
 
 **`scripts/helpers.sh`** -- Single utility function `get_tmux_option()` for reading tmux options with defaults.
 
