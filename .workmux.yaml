@@ -1,0 +1,6 @@
+panes:
+  - command: claude
+    focus: true
+  - command: git status
+    split: vertical
+    percentage: 50

@@ -91,8 +91,6 @@ rebuild_visible() {
   VISIBLE=()
   local i type gidx
 
-  [[ -n "$SEARCH_TERM" ]] && shopt -s nocasematch
-
   for ((i = 0; i < ${#ITEM_TYPE[@]}; i++)); do
     type="${ITEM_TYPE[$i]}"
     gidx="${ITEM_GROUP[$i]}"
@@ -120,8 +118,6 @@ rebuild_visible() {
       VISIBLE+=("$i")
     fi
   done
-
-  [[ -n "$SEARCH_TERM" ]] && shopt -u nocasematch
 
   # Clamp selection
   local max=$((${#VISIBLE[@]} - 1))
@@ -181,10 +177,8 @@ highlight_match() {
   fi
 
   local tlen=${#text} slen=${#search} pos
-  shopt -s nocasematch
   for ((pos = 0; pos <= tlen - slen; pos++)); do
     if [[ "${text:pos:slen}" == "$search" ]]; then
-      shopt -u nocasematch
       printf '%s%s%s%s%s' \
         "${text:0:pos}" \
         "$COLOR_MATCH" \
@@ -194,7 +188,6 @@ highlight_match() {
       return
     fi
   done
-  shopt -u nocasematch
   printf '%s' "$text"
 }
 
@@ -379,20 +372,17 @@ search_next() {
   local start=$((SELECTED + 1))
   local count=${#VISIBLE[@]}
 
-  shopt -s nocasematch
   local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start + i) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
       if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
-        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
-  shopt -u nocasematch
 }
 
 search_prev() {
@@ -401,39 +391,33 @@ search_prev() {
   local start=$((SELECTED - 1))
   ((start < 0)) && start=$((count - 1))
 
-  shopt -s nocasematch
   local i idx vidx
   for ((i = 0; i < count; i++)); do
     idx=$(((start - i + count) % count))
     vidx="${VISIBLE[$idx]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
       if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
-        shopt -u nocasematch
         SELECTED=$idx
         return 0
       fi
     fi
   done
-  shopt -u nocasematch
 }
 
 search_next_from_top() {
   [[ -z "$SEARCH_TERM" ]] && return 0
   local count=${#VISIBLE[@]}
 
-  shopt -s nocasematch
   local i vidx
   for ((i = 0; i < count; i++)); do
     vidx="${VISIBLE[$i]}"
     if [[ "${ITEM_TYPE[$vidx]}" == "bind" ]]; then
       if [[ "${ITEM_KEY[$vidx]} ${ITEM_CMD[$vidx]}" == *"$SEARCH_TERM"* ]]; then
-        shopt -u nocasematch
         SELECTED=$i
         return 0
       fi
     fi
   done
-  shopt -u nocasematch
 }
 
 click_select() {
@@ -596,7 +580,7 @@ main() {
 
     if ((SEARCH_MODE)); then
       case "$key" in
-      ENTER)
+      ENTER | DOWN)
         SEARCH_MODE=0
         if [[ -n "$SEARCH_TERM" ]]; then
           expand_all
