@@ -520,7 +520,7 @@ read_key() {
         # Strip modifier bits (shift=4, meta=8, ctrl=16)
         mouse_button=$((mouse_button & ~(4 | 8 | 16)))
         case "$mouse_button" in
-        0) printf 'MOUSE_LEFT:%d' "$mouse_row" ;;
+        0) printf 'MOUSE_LEFT:%d:%d' "$mouse_row" "$mouse_col" ;;
         64) printf 'MOUSE_SCROLL_UP' ;;
         65) printf 'MOUSE_SCROLL_DOWN' ;;
         *) printf 'MOUSE_OTHER' ;;
@@ -586,11 +586,18 @@ main() {
 
     key="$(read_key)" || continue
 
-    # Extract mouse row from MOUSE_LEFT:ROW token
-    local mouse_row=0
+    # Extract mouse row and column from MOUSE_LEFT:ROW:COL token
+    local mouse_row=0 mouse_col=0
     if [[ "$key" == MOUSE_LEFT:* ]]; then
-      mouse_row="${key#MOUSE_LEFT:}"
+      local mouse_coords="${key#MOUSE_LEFT:}"
+      mouse_row="${mouse_coords%%:*}"
+      mouse_col="${mouse_coords#*:}"
       key="MOUSE_LEFT"
+    fi
+
+    # Close popup on click outside content area
+    if [[ "$key" == "MOUSE_LEFT" ]] && ((mouse_row > TERM_ROWS || mouse_col > TERM_COLS)); then
+      break
     fi
 
     if ((SEARCH_MODE)); then
