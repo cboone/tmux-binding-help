@@ -539,6 +539,7 @@ cleanup() {
 
 main() {
   local input_file="${1:--}"
+  local cmd_file="${3:-${input_file}.cmd}"
   POPUP_WIDTH_RAW="${2:-}"
   POPUP_WIDTH=""
   if [[ "$POPUP_WIDTH_RAW" =~ ^[0-9]+$ ]]; then
@@ -647,7 +648,7 @@ main() {
       if [[ "${ITEM_TYPE[$idx]}" == "group" ]]; then
         toggle_group
       else
-        printf '%s\n' "${ITEM_CMD[$idx]}" >"${input_file}.cmd"
+        printf '%s\n' "${ITEM_CMD[$idx]}" >"$cmd_file"
         break
       fi
       ;;
