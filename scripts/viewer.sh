@@ -579,7 +579,7 @@ main() {
 
     if ((SEARCH_MODE)); then
       case "$key" in
-      ENTER)
+      ENTER | DOWN)
         SEARCH_MODE=0
         if [[ -n "$SEARCH_TERM" ]]; then
           expand_all
