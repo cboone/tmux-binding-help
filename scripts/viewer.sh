@@ -628,6 +628,15 @@ main() {
         move_down
         move_down
         ;;
+      DOWN)
+        SEARCH_MODE=0
+        if [[ -n "$SEARCH_TERM" ]]; then
+          expand_all
+        fi
+        rebuild_visible
+        SELECTED=0
+        search_next_from_top
+        ;;
       MOUSE_RELEASE | MOUSE_OTHER) ;;
       *)
         if [[ ${#key} -eq 1 ]] && [[ "$key" =~ [[:print:]] ]]; then
