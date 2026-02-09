@@ -595,7 +595,7 @@ main() {
 
     if ((SEARCH_MODE)); then
       case "$key" in
-      ENTER)
+      ENTER | DOWN)
         SEARCH_MODE=0
         if [[ -n "$SEARCH_TERM" ]]; then
           expand_all
@@ -627,15 +627,6 @@ main() {
         move_down
         move_down
         move_down
-        ;;
-      DOWN)
-        SEARCH_MODE=0
-        if [[ -n "$SEARCH_TERM" ]]; then
-          expand_all
-        fi
-        rebuild_visible
-        SELECTED=0
-        search_next_from_top
         ;;
       MOUSE_RELEASE | MOUSE_OTHER) ;;
       *)
