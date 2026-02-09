@@ -34,7 +34,7 @@ main() {
     -T " binding help - $bind_count bindings " \
     -w "${popup_pct}%" \
     -h 90% \
-    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; rm -f '$tmpfile'"
+    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; if [ -f '${tmpfile}.cmd' ]; then exec_cmd=\$(cat '${tmpfile}.cmd'); rm -f '${tmpfile}.cmd' '$tmpfile'; echo \"\$exec_cmd\" | tmux source-file -; else rm -f '$tmpfile'; fi"
 }
 
 main

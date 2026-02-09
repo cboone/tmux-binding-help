@@ -7,7 +7,8 @@
 #   - Keyboard navigation (j/k/Up/Down, g/G, PgUp/PgDn)
 #   - Search with / (incremental filtering)
 #   - Mouse support (click to select, scroll wheel, click headers to collapse/expand or search)
-#   - Toggle groups with Enter/Space/Tab
+#   - Press Enter on a binding to execute it, or on a group to toggle collapse
+#   - Toggle groups with Space/Tab
 #   - Collapse/expand all with c/e
 #   - Press q or Escape to quit
 #
@@ -226,7 +227,7 @@ render() {
     printf '\033[K %ssearch: %s (%d matches)  [n/N next/prev, Esc clear]%s\n' \
       "$COLOR_SEARCH" "$SEARCH_TERM" "$match_count" "$COLOR_RESET"
   else
-    printf '\033[K %s/:search  c/e:collapse/expand all%s\n' \
+    printf '\033[K %sEnter:execute  /:search  c/e:collapse/expand all%s\n' \
       "$COLOR_HELP" "$COLOR_RESET"
   fi
 
@@ -656,7 +657,16 @@ main() {
     G | END) move_bottom ;;
     PGUP) page_up ;;
     PGDN) page_down ;;
-    ENTER | " " | TAB) toggle_group ;;
+    ENTER)
+      local idx="${VISIBLE[$SELECTED]}"
+      if [[ "${ITEM_TYPE[$idx]}" == "group" ]]; then
+        toggle_group
+      else
+        echo "${ITEM_CMD[$idx]}" >"${input_file}.cmd"
+        break
+      fi
+      ;;
+    " " | TAB) toggle_group ;;
     /)
       SEARCH_MODE=1
       SEARCH_TERM=""
