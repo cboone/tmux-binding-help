@@ -4,10 +4,10 @@
 $ printf '%s\n' \
 >   'bind-key -T prefix c new-window' \
 >   'bind-key -r -T prefix Up select-pane -U' \
->   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+>   | LC_ALL=C awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Prefix (2)
-BIND|c|new-window
 BIND|Up (repeat)|select-pane -U
+BIND|c|new-window
 ```
 
 # Handles -N and -F options before key
@@ -16,7 +16,7 @@ BIND|Up (repeat)|select-pane -U
 $ printf '%s\n' \
 >   'bind-key -N "pane split" -T prefix % split-window -h' \
 >   'bind-key -F "#{pane_id}" -T root MouseDown1Pane select-pane -t = && display-menu -T "Pane #{pane_index}"' \
->   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+>   | LC_ALL=C awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Prefix (1)
 BIND|%|split-window -h
 GROUP|Mouse (root) (1)
@@ -30,11 +30,11 @@ $ printf '%s\n' \
 >   'bind-key -T prefix C-\\ display-message hi' \
 >   'bind-key -T prefix \# display-message hash' \
 >   'bind-key -T prefix \; display-message semi' \
->   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+>   | LC_ALL=C awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Prefix (3)
-BIND|C-\|display-message hi
 BIND|#|display-message hash
 BIND|;|display-message semi
+BIND|C-\|display-message hi
 ```
 
 # Appends custom tables after built-in order
@@ -44,7 +44,7 @@ $ printf '%s\n' \
 >   'bind-key -T custom-table x display-message custom' \
 >   'bind-key -T root c new-window' \
 >   'bind-key -T prefix n next-window' \
->   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+>   | LC_ALL=C awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Prefix (1)
 BIND|n|next-window
 GROUP|Root (no prefix) (1)
@@ -63,15 +63,15 @@ $ printf '%s\n' \
 >   'bind-key -T copy-mode-vi MouseDrag1Pane begin-selection' \
 >   'bind-key -T copy-mode-vi v send-keys -X begin-selection' \
 >   'bind-key -T root M-DoubleClick1Pane resize-pane -Z' \
->   | awk -f scripts/parse-bindings.awk | tr '\t' '|'
+>   | LC_ALL=C awk -f scripts/parse-bindings.awk | tr '\t' '|'
 GROUP|Root (no prefix) (1)
 BIND|n|next-window
 GROUP|Copy Mode (vi) (1)
 BIND|v|send-keys -X begin-selection
 GROUP|Mouse (root) (3)
+BIND|M-DoubleClick1Pane|resize-pane -Z
 BIND|MouseDown1Pane|select-pane
 BIND|WheelUpPane|scroll-up
-BIND|M-DoubleClick1Pane|resize-pane -Z
 GROUP|Mouse (copy-mode-vi) (1)
 BIND|MouseDrag1Pane|begin-selection
 ```
