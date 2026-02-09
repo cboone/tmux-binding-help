@@ -642,11 +642,12 @@ main() {
     PGUP) page_up ;;
     PGDN) page_down ;;
     ENTER)
+      if ((SELECTED >= ${#VISIBLE[@]})); then break; fi
       local idx="${VISIBLE[$SELECTED]}"
       if [[ "${ITEM_TYPE[$idx]}" == "group" ]]; then
         toggle_group
       else
-        echo "${ITEM_CMD[$idx]}" >"${input_file}.cmd"
+        printf '%s\n' "${ITEM_CMD[$idx]}" >"${input_file}.cmd"
         break
       fi
       ;;

@@ -17,7 +17,7 @@ main() {
   # Write data to a temp file for the viewer
   local tmpfile
   tmpfile="$(mktemp "${TMPDIR:-/tmp}/tmux-binding-help.XXXXXX")"
-  trap 'rm -f "$tmpfile"' EXIT
+  trap 'rm -f "$tmpfile" "${tmpfile}.cmd"' EXIT
   echo "$data" >"$tmpfile"
 
   # Launch the popup with the viewer
@@ -34,7 +34,7 @@ main() {
     -T " binding help - $bind_count bindings " \
     -w "${popup_pct}%" \
     -h 90% \
-    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; if [ -f '${tmpfile}.cmd' ]; then exec_cmd=\$(cat '${tmpfile}.cmd'); rm -f '${tmpfile}.cmd' '$tmpfile'; echo \"\$exec_cmd\" | tmux source-file -; else rm -f '$tmpfile'; fi"
+    "bash '$CURRENT_DIR/viewer.sh' '$tmpfile' '$popup_cols'; if [ -f '${tmpfile}.cmd' ]; then tmux source-file '${tmpfile}.cmd'; rm -f '${tmpfile}.cmd' '$tmpfile'; else rm -f '$tmpfile'; fi"
 }
 
 main
