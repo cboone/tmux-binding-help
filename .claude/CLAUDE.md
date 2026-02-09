@@ -8,6 +8,7 @@ tmux-binding-help is a tmux plugin that displays an interactive popup showing al
 
 Tests use [Scrut](https://github.com/facebookincubator/scrut), a snapshot testing tool:
 
+```
 make test
 ```
 
