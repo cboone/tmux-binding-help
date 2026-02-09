@@ -86,7 +86,7 @@ Press **`prefix + ?`** to open the help popup.
 
 ### Search
 
-Search is case-insensitive and matches against both key names and commands.
+Search is case-sensitive and matches against both key names and commands.
 Matching text is highlighted, and the status bar shows the number of matches.
 Groups auto-expand when a search is active so all results are visible.
 
