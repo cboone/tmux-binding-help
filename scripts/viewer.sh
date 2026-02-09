@@ -220,7 +220,7 @@ render() {
     printf '\033[K %ssearch: %s (%d matches)  [n/N next/prev, Esc clear]%s\n' \
       "$COLOR_SEARCH" "$SEARCH_TERM" "$match_count" "$COLOR_RESET"
   else
-    printf '\033[K %sEnter:execute  /:search  c/e:collapse/expand all%s\n' \
+    printf '\033[K %sEnter:execute/toggle  /:search  c/e:collapse/expand all%s\n' \
       "$COLOR_HELP" "$COLOR_RESET"
   fi
 
