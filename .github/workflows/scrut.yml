@@ -20,7 +20,7 @@ jobs:
           rustup default stable
 
       - name: Install scrut
-        uses: cboone/gh-actions/actions/setup-scrut@v1
+        uses: cboone/gh-actions/actions/set-up-scrut@844bf31d4ec26df9d0aa531e79d8c3fccf9f0638 # v3.1.0
 
       - name: Run Scrut tests
         run: scrut test -w . tests
